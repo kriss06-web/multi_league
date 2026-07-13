@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Multi-Poule BO3 Manager</title>
+    <title>Tournament Pro - BO3 & Diff</title>
     
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1021/1021201.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1021/1021201.png">
@@ -26,7 +26,6 @@
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         input { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 1rem; }
 
-        /* Style des Matchs BO3 */
         .match-card { border-bottom: 1px solid #334155; padding: 15px 0; }
         .match-card:last-child { border: none; }
         .match-names { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; }
@@ -34,16 +33,16 @@
         .score-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
         .score-btn { 
             background: #334155; color: #94a3b8; border: 1px solid #475569; 
-            padding: 8px 2px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer;
+            padding: 10px 2px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer;
         }
         .score-btn.active { background: var(--primary); color: white; border-color: var(--accent); }
         .score-btn.active.is-win { background: var(--win); border-color: #4ade80; color: white; }
 
-        /* Classement */
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; padding-bottom: 8px; }
-        td { padding: 10px 4px; border-bottom: 1px solid #334155; font-size: 0.8rem; }
-        .pts-col { font-weight: bold; color: var(--accent); text-align: right; font-size: 1rem; }
+        td { padding: 12px 4px; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+        .pts-col { font-weight: bold; color: var(--win); text-align: right; font-size: 1.1rem; }
+        .diff-col { font-weight: bold; color: var(--accent); text-align: center; }
 
         button.main { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
         button.sec { background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
@@ -54,12 +53,11 @@
 </head>
 <body>
 
-    <h1>🤖 Tournament BO3 Manager</h1>
+    <h1>🤖 Tournament Pro BO3</h1>
 
-    <!-- ECRAN ACCUEIL -->
     <div id="sec-home">
         <div class="card">
-            <h2>Sélectionner une Poule</h2>
+            <h2>Choisir une Poule (8 joueurs)</h2>
             <div class="grid-menu">
                 <button class="main" onclick="openLeague('Poule_A')">🅰 Poule A</button>
                 <button class="main" onclick="openLeague('Poule_B')">🅱 Poule B</button>
@@ -79,7 +77,6 @@
         <button class="sec" style="width:100%; color:var(--lose); margin-top:5px;" onclick="fullReset()">⚠️ Reset Global</button>
     </div>
 
-    <!-- ECRAN SETUP -->
     <div id="sec-setup" class="hidden">
         <button class="sec" onclick="nav('sec-home')">⬅ Menu</button>
         <div class="card" style="margin-top:15px">
@@ -89,7 +86,6 @@
         </div>
     </div>
 
-    <!-- ECRAN TOURNOI -->
     <div id="sec-tournament" class="hidden">
         <button class="sec" onclick="nav('sec-home')">⬅ Accueil</button>
         
@@ -97,7 +93,7 @@
             <button class="sec" id="prev-btn" onclick="moveWave(-1)">◀</button>
             <div style="text-align:center">
                 <div id="wave-label" style="font-weight:bold; font-size:1.1rem">Vague 1 / 7</div>
-                <div id="league-label" style="font-size:0.7rem; color:var(--accent); font-weight:bold;">POULE</div>
+                <div id="league-label" style="font-size:0.7rem; color:var(--accent); font-weight:bold; text-transform:uppercase;">POULE</div>
             </div>
             <button class="sec" id="next-btn" onclick="moveWave(1)">▶</button>
         </div>
@@ -107,10 +103,10 @@
         </div>
 
         <div class="card">
-            <h2>Classement Poule</h2>
+            <h2>Classement détaillé</h2>
             <table>
                 <thead>
-                    <tr><th>JOUEUR</th><th style="text-align:center">W/L</th><th style="text-align:right">PTS</th></tr>
+                    <tr><th>JOUEUR</th><th style="text-align:center">W/L</th><th style="text-align:center">DIFF</th><th style="text-align:right">PTS</th></tr>
                 </thead>
                 <tbody id="leaderboard"></tbody>
             </table>
@@ -127,26 +123,20 @@
     let activeLeague = null;
 
     function load() {
-        const saved = localStorage.getItem('bot_bo3_manager_v1');
+        const saved = localStorage.getItem('bot_bo3_diff_v4');
         if(saved) db = JSON.parse(saved);
         nav('sec-home');
     }
 
-    function save() { localStorage.setItem('bot_bo3_manager_v1', JSON.stringify(db)); }
+    function save() { localStorage.setItem('bot_bo3_diff_v4', JSON.stringify(db)); }
 
     function openLeague(id) {
         activeLeague = id;
-        if(!db[id].started) {
-            setupLeagueInputs();
-            nav('sec-setup');
-        } else {
-            renderTournament();
-            nav('sec-tournament');
-        }
+        if(!db[id].started) { setupLeagueInputs(); nav('sec-setup'); } 
+        else { renderTournament(); nav('sec-tournament'); }
     }
 
     function setupLeagueInputs() {
-        document.getElementById('setup-title').innerText = "Joueurs : " + activeLeague.replace('_', ' ');
         const cont = document.getElementById('inputs-container');
         cont.innerHTML = "";
         for(let i=1; i<=8; i++) {
@@ -158,14 +148,12 @@
         let players = [];
         for(let i=1; i<=8; i++) {
             const el = document.getElementById('bot-' + i);
-            if(el) players.push({ id: i, name: el.value, matchWins: 0, matchLoses: 0, points: 0 });
+            if(el) players.push({ id: i, name: el.value, matchWins: 0, matchLoses: 0, points: 0, diff: 0 });
         }
         db[activeLeague].players = players;
         db[activeLeague].schedule = generateBergerSchedule(players.map(p => p.id));
         db[activeLeague].started = true;
-        save();
-        renderTournament();
-        nav('sec-tournament');
+        save(); renderTournament(); nav('sec-tournament');
     }
 
     function generateBergerSchedule(ids) {
@@ -175,7 +163,7 @@
         for(let r=0; r<n-1; r++) {
             let wave = [];
             for(let i=0; i<n/2; i++) {
-                wave.push({ p1: tempIds[i], p2: tempIds[n-1-i], score: null }); // score: "2-0", "2-1", "1-2", "0-2"
+                wave.push({ p1: tempIds[i], p2: tempIds[n-1-i], score: null });
             }
             sched.push(wave);
             tempIds.splice(1, 0, tempIds.pop());
@@ -187,8 +175,7 @@
         let leg = db[activeLeague];
         let match = leg.schedule[leg.currentWave][matchIdx];
         match.score = (match.score === scoreVal) ? null : scoreVal;
-        save();
-        renderTournament();
+        save(); renderTournament();
     }
 
     function renderTournament() {
@@ -229,7 +216,7 @@
 
     function calculateLeaderboard() {
         let leg = db[activeLeague];
-        leg.players.forEach(p => { p.matchWins = 0; p.matchLoses = 0; p.points = 0; });
+        leg.players.forEach(p => { p.matchWins = 0; p.matchLoses = 0; p.points = 0; p.diff = 0; });
 
         leg.schedule.forEach(wave => {
             wave.forEach(m => {
@@ -237,26 +224,44 @@
                 const b1 = leg.players.find(p => p.id === m.p1);
                 const b2 = leg.players.find(p => p.id === m.p2);
                 
-                if(m.score === "2-0") { b1.points += 3; b1.matchWins++; b2.matchLoses++; }
-                else if(m.score === "2-1") { b1.points += 2; b1.matchWins++; b2.matchLoses++; }
-                else if(m.score === "1-2") { b1.points += 1; b2.points += 2; b2.matchWins++; b1.matchLoses++; }
-                else if(m.score === "0-2") { b1.points += 0; b2.points += 3; b2.matchWins++; b1.matchLoses++; }
+                if(m.score === "2-0") { 
+                    b1.points += 3; b1.diff += 2; b1.matchWins++;
+                    b2.points += 0; b2.diff -= 2; b2.matchLoses++;
+                }
+                else if(m.score === "2-1") { 
+                    b1.points += 2; b1.diff += 1; b1.matchWins++;
+                    b2.points += 1; b2.diff -= 1; b2.matchLoses++;
+                }
+                else if(m.score === "1-2") { 
+                    b1.points += 1; b1.diff -= 1; b1.matchLoses++;
+                    b2.points += 2; b2.diff += 1; b2.matchWins++;
+                }
+                else if(m.score === "0-2") { 
+                    b1.points += 0; b1.diff -= 2; b1.matchLoses++;
+                    b2.points += 3; b2.diff += 2; b2.matchWins++;
+                }
             });
         });
 
-        const sorted = [...leg.players].sort((a,b) => b.points - a.points || b.matchWins - a.matchWins);
+        // TRI : Points > Diff > Victoires
+        const sorted = [...leg.players].sort((a,b) => {
+            if(b.points !== a.points) return b.points - a.points;
+            if(b.diff !== a.diff) return b.diff - a.diff;
+            return b.matchWins - a.matchWins;
+        });
+
         document.getElementById('leaderboard').innerHTML = sorted.map(p => `
             <tr>
                 <td><b>${p.name}</b></td>
-                <td style="text-align:center; color:#94a3b8">${p.matchWins}W - ${p.matchLoses}L</td>
+                <td style="text-align:center; color:#94a3b8">${p.matchWins}W-${p.matchLoses}L</td>
+                <td class="diff-col">${p.diff > 0 ? '+' + p.diff : p.diff}</td>
                 <td class="pts-col">${p.points}</td>
             </tr>`).join('');
     }
 
     function moveWave(dir) {
         db[activeLeague].currentWave += dir;
-        save();
-        renderTournament();
+        save(); renderTournament();
     }
 
     function nav(id) {
@@ -268,7 +273,7 @@
         const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `tournoi_bo3_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `tournoi_bo3_diff_${new Date().toISOString().split('T')[0]}.json`;
         a.click();
     }
 
@@ -276,15 +281,14 @@
         const reader = new FileReader();
         reader.onload = (event) => {
             db = JSON.parse(event.target.result);
-            save(); load();
-            alert("Données chargées !");
+            save(); load(); alert("Données chargées !");
         };
         reader.readAsText(e.target.files[0]);
     }
 
     function fullReset() {
         if(confirm("Attention : supprimer TOUTES les poules et tous les scores ?")) {
-            localStorage.removeItem('bot_bo3_manager_v1');
+            localStorage.removeItem('bot_bo3_diff_v4');
             location.reload();
         }
     }
