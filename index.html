@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dual League Bot Manager</title>
+    
+    <link rel="icon" href="https://fav.farm/🤖" />
+    <link rel="apple-touch-icon" href="https://fav.farm/🤖" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <style>
+        :root { 
+            --primary: #6366f1; --bg: #0f172a; --card: #1e293b;
+            --text: #f8fafc; --win: #22c55e; --draw: #f59e0b; --lose: #ef4444;
+        }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 40px; }
+        .card { background: var(--card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid #334155; }
+        .hidden { display: none; }
+        
+        h1 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 20px; }
+        h2 { font-size: 1.1rem; margin: 0 0 15px 0; color: var(--primary); }
+
+        /* Inputs configuration */
+        .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        input { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
+
+        /* Matchs Styles */
+        .match-row { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 8px; align-items: center; padding: 12px 0; border-bottom: 1px solid #334155; }
+        .btn-res { background: #334155; color: white; border: 2px solid transparent; padding: 10px 5px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; height: 100%; }
+        .btn-res.active-win { border-color: var(--win); color: var(--win); background: rgba(34, 197, 94, 0.1); }
+        .btn-res.active-draw { border-color: var(--draw); color: var(--draw); background: rgba(245, 158, 11, 0.1); }
+        .btn-draw { font-size: 0.65rem; background: #1e293b; border: 1px solid #475569; color: #94a3b8; }
+
+        /* Classement */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; padding-bottom: 10px; }
+        td { padding: 8px 4px; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+        .pts { font-weight: bold; color: var(--win); text-align: right; }
+
+        /* Navigation */
+        button.main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
+        button.sec { background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        .league-selector { display: grid; gap: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1 id="app-title">🤖 Bot League Manager</h1>
+
+    <!-- ECRAN ACCUEIL : CHOIX DE L'ACTION -->
+    <div id="sec-home">
+        <div class="card">
+            <h2>Mes Ligues en cours</h2>
+            <div class="league-selector">
+                <button class="main" onclick="openLeague('Ligue_A')">🏆 Ligue ALPHA (16)</button>
+                <button class="main" style="background:#8b5cf6" onclick="openLeague('Ligue_B')">🔮 Ligue BETA (16)</button>
+            </div>
+        </div>
+
+        <div class="card" style="opacity:0.8">
+            <h3>Sauvegarde (JSON)</h3>
+            <div style="display:flex; gap:10px">
+                <button class="sec" style="flex:1" onclick="exportJSON()">💾 Exporter</button>
+                <button class="sec" style="flex:1" onclick="document.getElementById('fileIn').click()">📂 Charger</button>
+            </div>
+            <input type="file" id="fileIn" class="hidden" onchange="importJSON(event)">
+        </div>
+        <button class="sec" style="width:100%; color:var(--lose)" onclick="fullReset()">⚠️ Reset Tout</button>
+    </div>
+
+    <!-- ECRAN CONFIGURATION JOUEURS -->
+    <div id="sec-setup" class="hidden">
+        <button class="sec" onclick="nav('sec-home')">⬅ Retour</button>
+        <div class="card" style="margin-top:15px">
+            <h2 id="setup-title">Config</h2>
+            <div class="player-grid" id="inputs-container"></div>
+            <button class="main" style="margin-top:20px" onclick="startLeague()">GÉNÉRER LA LIGUE</button>
+        </div>
+    </div>
+
+    <!-- ECRAN TOURNOI -->
+    <div id="sec-tournament" class="hidden">
+        <button class="sec" onclick="nav('sec-home')">⬅ Menu Principal</button>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin: 15px 0;">
+            <button class="sec" id="prev-btn" onclick="moveWave(-1)">◀</button>
+            <div style="text-align:center">
+                <div id="wave-label" style="font-weight:bold">Vague 1 / 15</div>
+                <div id="league-label" style="font-size:0.7rem; color:var(--primary)">LIGUE</div>
+            </div>
+            <button class="sec" id="next-btn" onclick="moveWave(1)">▶</button>
+        </div>
+
+        <div class="card">
+            <div id="matches-list"></div>
+        </div>
+
+        <div class="card">
+            <h2>Leaderboard</h2>
+            <table>
+                <thead>
+                    <tr><th>BOT</th><th>W/D/L</th><th class="pts">PTS</th></tr>
+                </thead>
+                <tbody id="leaderboard"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    // --- STRUCTURE DE DONNÉES ---
+    let db = {
+        Ligue_A: { started: false, players: [], schedule: [], currentWave: 0 },
+        Ligue_B: { started: false, players: [], schedule: [], currentWave: 0 }
+    };
+    let activeLeague = null;
+
+    // --- INITIALISATION ---
+    function load() {
+        const saved = localStorage.getItem('bot_multi_league_db');
+        if(saved) db = JSON.parse(saved);
+        nav('sec-home');
+    }
+
+    function save() {
+        localStorage.setItem('bot_multi_league_db', JSON.stringify(db));
+    }
+
+    function openLeague(id) {
+        activeLeague = id;
+        if(!db[id].started) {
+            setupLeagueInputs();
+            nav('sec-setup');
+        } else {
+            renderTournament();
+            nav('sec-tournament');
+        }
+    }
+
+    function setupLeagueInputs() {
+        document.getElementById('setup-title').innerText = "Joueurs : " + activeLeague.replace('_', ' ');
+        const cont = document.getElementById('inputs-container');
+        cont.innerHTML = "";
+        for(let i=1; i<=16; i++) {
+            cont.innerHTML += `<input type="text" id="p${i}" value="Bot_${i}_${activeLeague.split('_')[1]}" placeholder="Nom ${i}">`;
+        }
+    }
+
+    function startLeague() {
+        let players = [];
+        for(let i=1; i<=16; i++) {
+            players.push({ id: i, name: document.getElementById('p${i}').value, wins: 0, draws: 0, loses: 0, pts: 0 });
+        }
+        db[activeLeague].players = players;
+        db[activeLeague].schedule = generateBergerSchedule(players.map(p => p.id));
+        db[activeLeague].started = true;
+        save();
+        renderTournament();
+        nav('sec-tournament');
+    }
+
+    function generateBergerSchedule(ids) {
+        let sched = [];
+        const n = ids.length;
+        for(let r=0; r<n-1; r++) {
+            let wave = [];
+            for(let i=0; i<n/2; i++) {
+                wave.push({ p1: ids[i], p2: ids[n-1-i], result: null }); // result: p1, p2, or 'DRAW'
+            }
+            sched.push(wave);
+            ids.splice(1, 0, ids.pop());
+        }
+        return sched;
+    }
+
+    function setResult(matchIdx, res) {
+        let leg = db[activeLeague];
+        let match = leg.schedule[leg.currentWave][matchIdx];
+        match.result = (match.result === res) ? null : res;
+        save();
+        renderTournament();
+    }
+
+    function renderTournament() {
+        let leg = db[activeLeague];
+        document.getElementById('league-label').innerText = activeLeague.replace('_', ' ');
+        document.getElementById('wave-label').innerText = `Vague ${leg.currentWave + 1} / 15`;
+        
+        // Matchs
+        const mList = document.getElementById('matches-list');
+        mList.innerHTML = "";
+        let waveCompleted = true;
+
+        leg.schedule[leg.currentWave].forEach((m, idx) => {
+            const bot1 = leg.players.find(p => p.id === m.p1);
+            const bot2 = leg.players.find(p => p.id === m.p2);
+            if(!m.result) waveCompleted = false;
+
+            mList.innerHTML += `
+                <div class="match-row">
+                    <button class="btn-res ${m.result === bot1.id ? 'active-win' : ''}" onclick="setResult(${idx}, ${bot1.id})">${bot1.name}</button>
+                    <button class="btn-res btn-draw ${m.result === 'DRAW' ? 'active-draw' : ''}" onclick="setResult(${idx}, 'DRAW')">NUL</button>
+                    <button class="btn-res ${m.result === bot2.id ? 'active-win' : ''}" onclick="setResult(${idx}, ${bot2.id})">${bot2.name}</button>
+                </div>`;
+        });
+
+        // Navigation vagues
+        document.getElementById('prev-btn').disabled = (leg.currentWave === 0);
+        document.getElementById('next-btn').disabled = !waveCompleted || (leg.currentWave === 14);
+
+        calculateLeaderboard();
+    }
+
+    function calculateLeaderboard() {
+        let leg = db[activeLeague];
+        leg.players.forEach(p => { p.wins = 0; p.draws = 0; p.loses = 0; p.pts = 0; });
+
+        leg.schedule.forEach(wave => {
+            wave.forEach(m => {
+                if(!m.result) return;
+                const b1 = leg.players.find(p => p.id === m.p1);
+                const b2 = leg.players.find(p => p.id === m.p2);
+                if(m.result === 'DRAW') {
+                    b1.draws++; b1.pts += 1; b2.draws++; b2.pts += 1;
+                } else if(m.result === b1.id) {
+                    b1.wins++; b1.pts += 3; b2.loses++;
+                } else {
+                    b2.wins++; b2.pts += 3; b1.loses++;
+                }
+            });
+        });
+
+        const sorted = [...leg.players].sort((a,b) => b.pts - a.pts || b.wins - a.wins);
+        document.getElementById('leaderboard').innerHTML = sorted.map(p => `
+            <tr>
+                <td><b>${p.name}</b></td>
+                <td style="color:#94a3b8">${p.wins}/${p.draws}/${p.loses}</td>
+                <td class="pts">${p.pts}</td>
+            </tr>`).join('');
+    }
+
+    function moveWave(dir) {
+        db[activeLeague].currentWave += dir;
+        save();
+        renderTournament();
+    }
+
+    // --- TOOLS ---
+    function nav(id) {
+        document.querySelectorAll('body > div').forEach(d => d.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `saison_bots_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+    }
+
+    function importJSON(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            db = JSON.parse(event.target.result);
+            save(); load();
+            alert("Saison chargée !");
+        };
+        reader.readAsText(e.target.files[0]);
+    }
+
+    function fullReset() {
+        if(confirm("Tout effacer ?")) {
+            localStorage.removeItem('bot_multi_league_db');
+            location.reload();
+        }
+    }
+
+    load();
+</script>
+</body>
+</html>
