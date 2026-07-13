@@ -3,93 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dual Poule 8 Manager</title>
+    <title>Multi-Poule BO3 Manager</title>
     
-    <!-- CONFIGURATION ICONE PROPRE POUR IPHONE -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1021/1021201.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1021/1021201.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BotManager">
 
     <style>
         :root { 
             --primary: #6366f1; --bg: #0f172a; --card: #1e293b;
-            --text: #f8fafc; --win: #22c55e; --draw: #f59e0b; --lose: #ef4444;
+            --text: #f8fafc; --win: #22c55e; --lose: #ef4444; --accent: #38bdf8;
         }
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; padding-bottom: 40px; }
         .card { background: var(--card); padding: 15px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 20px; border: 1px solid #334155; }
         .hidden { display: none; }
         
-        h1 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 20px; }
-        h2 { font-size: 1.1rem; margin: 0 0 15px 0; color: var(--primary); }
+        h1 { text-align: center; color: var(--primary); font-size: 1.4rem; margin-bottom: 20px; }
+        h2 { font-size: 1.1rem; margin: 0 0 15px 0; color: var(--accent); }
 
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         input { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; font-size: 1rem; }
 
-        .match-row { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 8px; align-items: center; padding: 12px 0; border-bottom: 1px solid #334155; }
-        .btn-res { background: #334155; color: white; border: 2px solid transparent; padding: 12px 5px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; min-height: 48px; }
-        .btn-res.active-win { border-color: var(--win); color: var(--win); background: rgba(34, 197, 94, 0.1); }
-        .btn-res.active-draw { border-color: var(--draw); color: var(--draw); background: rgba(245, 158, 11, 0.1); }
-        .btn-draw { font-size: 0.65rem; background: #1e293b; border: 1px solid #475569; color: #94a3b8; }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; padding-bottom: 10px; }
-        td { padding: 10px 4px; border-bottom: 1px solid #334155; font-size: 0.85rem; }
-        .pts { font-weight: bold; color: var(--win); text-align: right; }
-
-        button.main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1rem; }
-        button.sec { background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
-        button:disabled { opacity: 0.2; cursor: not-allowed; }
+        /* Style des Matchs BO3 */
+        .match-card { border-bottom: 1px solid #334155; padding: 15px 0; }
+        .match-card:last-child { border: none; }
+        .match-names { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; }
         
-        .league-selector { display: grid; gap: 10px; margin-bottom: 20px; }
+        .score-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .score-btn { 
+            background: #334155; color: #94a3b8; border: 1px solid #475569; 
+            padding: 8px 2px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer;
+        }
+        .score-btn.active { background: var(--primary); color: white; border-color: var(--accent); }
+        .score-btn.active.is-win { background: var(--win); border-color: #4ade80; color: white; }
+
+        /* Classement */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; padding-bottom: 8px; }
+        td { padding: 10px 4px; border-bottom: 1px solid #334155; font-size: 0.8rem; }
+        .pts-col { font-weight: bold; color: var(--accent); text-align: right; font-size: 1rem; }
+
+        button.main { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
+        button.sec { background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
+        button:disabled { opacity: 0.2; }
+        
+        .grid-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>🤖 Bot Dual Poule 8</h1>
+    <h1>🤖 Tournament BO3 Manager</h1>
 
     <!-- ECRAN ACCUEIL -->
     <div id="sec-home">
         <div class="card">
-            <h2>Choisir une Poule</h2>
-            <div class="league-selector">
-                <button class="main" onclick="openLeague('Poule_A')">🏆 Poule ALPHA (8)</button>
-                <button class="main" style="background:#8b5cf6" onclick="openLeague('Poule_B')">🔮 Poule BETA (8)</button>
+            <h2>Sélectionner une Poule</h2>
+            <div class="grid-menu">
+                <button class="main" onclick="openLeague('Poule_A')">🅰 Poule A</button>
+                <button class="main" onclick="openLeague('Poule_B')">🅱 Poule B</button>
+                <button class="main" onclick="openLeague('Poule_C')">🅲 Poule C</button>
+                <button class="main" onclick="openLeague('Poule_D')">🅳 Poule D</button>
             </div>
         </div>
 
         <div class="card" style="opacity:0.8">
-            <h3 style="margin-top:0">Sauvegarde iCloud/iPhone</h3>
+            <h3 style="margin-top:0; font-size: 0.9rem;">Sauvegarde & Transfert</h3>
             <div style="display:flex; gap:10px">
-                <button class="sec" style="flex:1" onclick="exportJSON()">💾 Sauver</button>
-                <button class="sec" style="flex:1" onclick="document.getElementById('fileIn').click()">📂 Charger</button>
+                <button class="sec" style="flex:1" onclick="exportJSON()">💾 Export</button>
+                <button class="sec" style="flex:1" onclick="document.getElementById('fileIn').click()">📂 Import</button>
             </div>
             <input type="file" id="fileIn" class="hidden" onchange="importJSON(event)">
         </div>
-        <button class="sec" style="width:100%; color:var(--lose); margin-top:10px;" onclick="fullReset()">⚠️ Tout Réinitialiser</button>
+        <button class="sec" style="width:100%; color:var(--lose); margin-top:5px;" onclick="fullReset()">⚠️ Reset Global</button>
     </div>
 
     <!-- ECRAN SETUP -->
     <div id="sec-setup" class="hidden">
-        <button class="sec" onclick="nav('sec-home')">⬅ Retour</button>
+        <button class="sec" onclick="nav('sec-home')">⬅ Menu</button>
         <div class="card" style="margin-top:15px">
-            <h2 id="setup-title">Noms des 8 Bots</h2>
+            <h2 id="setup-title">Noms des 8 Joueurs</h2>
             <div class="player-grid" id="inputs-container"></div>
-            <button class="main" style="margin-top:20px" onclick="startLeague()">GÉNÉRER LA POULE</button>
+            <button class="main" style="margin-top:20px" onclick="startLeague()">GÉNÉRER LE TOURNOI</button>
         </div>
     </div>
 
     <!-- ECRAN TOURNOI -->
     <div id="sec-tournament" class="hidden">
-        <button class="sec" onclick="nav('sec-home')">⬅ Menu</button>
+        <button class="sec" onclick="nav('sec-home')">⬅ Accueil</button>
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin: 15px 0;">
             <button class="sec" id="prev-btn" onclick="moveWave(-1)">◀</button>
             <div style="text-align:center">
                 <div id="wave-label" style="font-weight:bold; font-size:1.1rem">Vague 1 / 7</div>
-                <div id="league-label" style="font-size:0.7rem; color:var(--primary); text-transform: uppercase;">POULE</div>
+                <div id="league-label" style="font-size:0.7rem; color:var(--accent); font-weight:bold;">POULE</div>
             </div>
             <button class="sec" id="next-btn" onclick="moveWave(1)">▶</button>
         </div>
@@ -99,10 +107,10 @@
         </div>
 
         <div class="card">
-            <h2>Classement</h2>
+            <h2>Classement Poule</h2>
             <table>
                 <thead>
-                    <tr><th>BOT</th><th>W/D/L</th><th class="pts">PTS</th></tr>
+                    <tr><th>JOUEUR</th><th style="text-align:center">W/L</th><th style="text-align:right">PTS</th></tr>
                 </thead>
                 <tbody id="leaderboard"></tbody>
             </table>
@@ -112,21 +120,19 @@
 <script>
     let db = {
         Poule_A: { started: false, players: [], schedule: [], currentWave: 0 },
-        Poule_B: { started: false, players: [], schedule: [], currentWave: 0 }
+        Poule_B: { started: false, players: [], schedule: [], currentWave: 0 },
+        Poule_C: { started: false, players: [], schedule: [], currentWave: 0 },
+        Poule_D: { started: false, players: [], schedule: [], currentWave: 0 }
     };
     let activeLeague = null;
 
-    function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', year:'2-digit'}) : "--/--/--"; }
-
     function load() {
-        const saved = localStorage.getItem('bot_poule8_v3');
+        const saved = localStorage.getItem('bot_bo3_manager_v1');
         if(saved) db = JSON.parse(saved);
         nav('sec-home');
     }
 
-    function save() {
-        localStorage.setItem('bot_poule8_v3', JSON.stringify(db));
-    }
+    function save() { localStorage.setItem('bot_bo3_manager_v1', JSON.stringify(db)); }
 
     function openLeague(id) {
         activeLeague = id;
@@ -140,12 +146,11 @@
     }
 
     function setupLeagueInputs() {
-        document.getElementById('setup-title').innerText = "Bots : " + activeLeague.replace('_', ' ');
+        document.getElementById('setup-title').innerText = "Joueurs : " + activeLeague.replace('_', ' ');
         const cont = document.getElementById('inputs-container');
         cont.innerHTML = "";
-        const suffix = activeLeague.split('_')[1];
         for(let i=1; i<=8; i++) {
-            cont.innerHTML += `<input type="text" id="bot-${i}" value="Bot_${i}_${suffix}" placeholder="Nom ${i}">`;
+            cont.innerHTML += `<input type="text" id="bot-${i}" value="Joueur_${i}" placeholder="Nom ${i}">`;
         }
     }
 
@@ -153,9 +158,8 @@
         let players = [];
         for(let i=1; i<=8; i++) {
             const el = document.getElementById('bot-' + i);
-            if(el) players.push({ id: i, name: el.value, wins: 0, draws: 0, loses: 0, pts: 0 });
+            if(el) players.push({ id: i, name: el.value, matchWins: 0, matchLoses: 0, points: 0 });
         }
-        
         db[activeLeague].players = players;
         db[activeLeague].schedule = generateBergerSchedule(players.map(p => p.id));
         db[activeLeague].started = true;
@@ -171,7 +175,7 @@
         for(let r=0; r<n-1; r++) {
             let wave = [];
             for(let i=0; i<n/2; i++) {
-                wave.push({ p1: tempIds[i], p2: tempIds[n-1-i], result: null });
+                wave.push({ p1: tempIds[i], p2: tempIds[n-1-i], score: null }); // score: "2-0", "2-1", "1-2", "0-2"
             }
             sched.push(wave);
             tempIds.splice(1, 0, tempIds.pop());
@@ -179,10 +183,10 @@
         return sched;
     }
 
-    function setResult(matchIdx, res) {
+    function setScore(matchIdx, scoreVal) {
         let leg = db[activeLeague];
         let match = leg.schedule[leg.currentWave][matchIdx];
-        match.result = (match.result === res) ? null : res;
+        match.score = (match.score === scoreVal) ? null : scoreVal;
         save();
         renderTournament();
     }
@@ -199,13 +203,21 @@
         leg.schedule[leg.currentWave].forEach((m, idx) => {
             const bot1 = leg.players.find(p => p.id === m.p1);
             const bot2 = leg.players.find(p => p.id === m.p2);
-            if(!m.result) waveCompleted = false;
+            if(!m.score) waveCompleted = false;
 
             mList.innerHTML += `
-                <div class="match-row">
-                    <button class="btn-res ${m.result === bot1.id ? 'active-win' : ''}" onclick="setResult(${idx}, ${bot1.id})">${bot1.name}</button>
-                    <button class="btn-res btn-draw ${m.result === 'DRAW' ? 'active-draw' : ''}" onclick="setResult(${idx}, 'DRAW')">NUL</button>
-                    <button class="btn-res ${m.result === bot2.id ? 'active-win' : ''}" onclick="setResult(${idx}, ${bot2.id})">${bot2.name}</button>
+                <div class="match-card">
+                    <div class="match-names">
+                        <span>${bot1.name}</span>
+                        <span style="color:var(--accent)">VS</span>
+                        <span>${bot2.name}</span>
+                    </div>
+                    <div class="score-selector">
+                        <button class="score-btn ${m.score==='2-0'?'active is-win':''}" onclick="setScore(${idx}, '2-0')">2 - 0</button>
+                        <button class="score-btn ${m.score==='2-1'?'active is-win':''}" onclick="setScore(${idx}, '2-1')">2 - 1</button>
+                        <button class="score-btn ${m.score==='1-2'?'active':''}" onclick="setScore(${idx}, '1-2')">1 - 2</button>
+                        <button class="score-btn ${m.score==='0-2'?'active':''}" onclick="setScore(${idx}, '0-2')">0 - 2</button>
+                    </div>
                 </div>`;
         });
 
@@ -217,29 +229,27 @@
 
     function calculateLeaderboard() {
         let leg = db[activeLeague];
-        leg.players.forEach(p => { p.wins = 0; p.draws = 0; p.loses = 0; p.pts = 0; });
+        leg.players.forEach(p => { p.matchWins = 0; p.matchLoses = 0; p.points = 0; });
 
         leg.schedule.forEach(wave => {
             wave.forEach(m => {
-                if(!m.result) return;
+                if(!m.score) return;
                 const b1 = leg.players.find(p => p.id === m.p1);
                 const b2 = leg.players.find(p => p.id === m.p2);
-                if(m.result === 'DRAW') {
-                    b1.draws++; b1.pts += 1; b2.draws++; b2.pts += 1;
-                } else if(m.result === b1.id) {
-                    b1.wins++; b1.pts += 3; b2.loses++;
-                } else {
-                    b2.wins++; b2.pts += 3; b1.loses++;
-                }
+                
+                if(m.score === "2-0") { b1.points += 3; b1.matchWins++; b2.matchLoses++; }
+                else if(m.score === "2-1") { b1.points += 2; b1.matchWins++; b2.matchLoses++; }
+                else if(m.score === "1-2") { b1.points += 1; b2.points += 2; b2.matchWins++; b1.matchLoses++; }
+                else if(m.score === "0-2") { b1.points += 0; b2.points += 3; b2.matchWins++; b1.matchLoses++; }
             });
         });
 
-        const sorted = [...leg.players].sort((a,b) => b.pts - a.pts || b.wins - a.wins);
+        const sorted = [...leg.players].sort((a,b) => b.points - a.points || b.matchWins - a.matchWins);
         document.getElementById('leaderboard').innerHTML = sorted.map(p => `
             <tr>
                 <td><b>${p.name}</b></td>
-                <td style="color:#94a3b8">${p.wins}/${p.draws}/${p.loses}</td>
-                <td class="pts">${p.pts}</td>
+                <td style="text-align:center; color:#94a3b8">${p.matchWins}W - ${p.matchLoses}L</td>
+                <td class="pts-col">${p.points}</td>
             </tr>`).join('');
     }
 
@@ -254,27 +264,27 @@
         document.getElementById(id).classList.remove('hidden');
     }
 
-    function exportData() {
+    function exportJSON() {
         const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `saison_poule8_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `tournoi_bo3_${new Date().toISOString().split('T')[0]}.json`;
         a.click();
     }
 
-    function importData(e) {
-        const r = new FileReader();
-        r.onload = (ev) => {
-            db = JSON.parse(ev.target.result);
+    function importJSON(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            db = JSON.parse(event.target.result);
             save(); load();
-            alert("Saison chargée !");
+            alert("Données chargées !");
         };
-        r.readAsText(e.target.files[0]);
+        reader.readAsText(e.target.files[0]);
     }
 
     function fullReset() {
-        if(confirm("Effacer définitivement les deux poules ?")) {
-            localStorage.removeItem('bot_poule8_v3');
+        if(confirm("Attention : supprimer TOUTES les poules et tous les scores ?")) {
+            localStorage.removeItem('bot_bo3_manager_v1');
             location.reload();
         }
     }
