@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dual League Bot Manager</title>
+    <title>Dual League Manager</title>
     
+    <!-- CONFIGURATION ICONE ET APP MOBILE -->
     <link rel="icon" href="https://fav.farm/🤖" />
     <link rel="apple-touch-icon" href="https://fav.farm/🤖" />
+    <!-- Nouvelles balises pour compatibilité Android/iOS -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
         :root { 
@@ -21,24 +25,20 @@
         h1 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 20px; }
         h2 { font-size: 1.1rem; margin: 0 0 15px 0; color: var(--primary); }
 
-        /* Inputs configuration */
         .player-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         input { background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
 
-        /* Matchs Styles */
         .match-row { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 8px; align-items: center; padding: 12px 0; border-bottom: 1px solid #334155; }
-        .btn-res { background: #334155; color: white; border: 2px solid transparent; padding: 10px 5px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; height: 100%; }
+        .btn-res { background: #334155; color: white; border: 2px solid transparent; padding: 10px 5px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; min-height: 45px; }
         .btn-res.active-win { border-color: var(--win); color: var(--win); background: rgba(34, 197, 94, 0.1); }
         .btn-res.active-draw { border-color: var(--draw); color: var(--draw); background: rgba(245, 158, 11, 0.1); }
         .btn-draw { font-size: 0.65rem; background: #1e293b; border: 1px solid #475569; color: #94a3b8; }
 
-        /* Classement */
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; padding-bottom: 10px; }
         td { padding: 8px 4px; border-bottom: 1px solid #334155; font-size: 0.85rem; }
         .pts { font-weight: bold; color: var(--win); text-align: right; }
 
-        /* Navigation */
         button.main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
         button.sec { background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
         button:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -50,7 +50,7 @@
 
     <h1 id="app-title">🤖 Bot League Manager</h1>
 
-    <!-- ECRAN ACCUEIL : CHOIX DE L'ACTION -->
+    <!-- ECRAN ACCUEIL -->
     <div id="sec-home">
         <div class="card">
             <h2>Mes Ligues en cours</h2>
@@ -71,7 +71,7 @@
         <button class="sec" style="width:100%; color:var(--lose)" onclick="fullReset()">⚠️ Reset Tout</button>
     </div>
 
-    <!-- ECRAN CONFIGURATION JOUEURS -->
+    <!-- ECRAN SETUP -->
     <div id="sec-setup" class="hidden">
         <button class="sec" onclick="nav('sec-home')">⬅ Retour</button>
         <div class="card" style="margin-top:15px">
@@ -110,22 +110,20 @@
     </div>
 
 <script>
-    // --- STRUCTURE DE DONNÉES ---
     let db = {
         Ligue_A: { started: false, players: [], schedule: [], currentWave: 0 },
         Ligue_B: { started: false, players: [], schedule: [], currentWave: 0 }
     };
     let activeLeague = null;
 
-    // --- INITIALISATION ---
     function load() {
-        const saved = localStorage.getItem('bot_multi_league_db');
+        const saved = localStorage.getItem('bot_multi_league_v2');
         if(saved) db = JSON.parse(saved);
         nav('sec-home');
     }
 
     function save() {
-        localStorage.setItem('bot_multi_league_db', JSON.stringify(db));
+        localStorage.setItem('bot_multi_league_v2', JSON.stringify(db));
     }
 
     function openLeague(id) {
@@ -143,16 +141,26 @@
         document.getElementById('setup-title').innerText = "Joueurs : " + activeLeague.replace('_', ' ');
         const cont = document.getElementById('inputs-container');
         cont.innerHTML = "";
+        const suffix = activeLeague.split('_')[1];
         for(let i=1; i<=16; i++) {
-            cont.innerHTML += `<input type="text" id="p${i}" value="Bot_${i}_${activeLeague.split('_')[1]}" placeholder="Nom ${i}">`;
+            cont.innerHTML += `<input type="text" class="bot-input" id="bot-${i}" value="Bot_${i}_${suffix}" placeholder="Nom ${i}">`;
         }
     }
 
     function startLeague() {
         let players = [];
         for(let i=1; i<=16; i++) {
-            players.push({ id: i, name: document.getElementById('p${i}').value, wins: 0, draws: 0, loses: 0, pts: 0 });
+            const el = document.getElementById('bot-' + i);
+            if(el) {
+                players.push({ id: i, name: el.value, wins: 0, draws: 0, loses: 0, pts: 0 });
+            }
         }
+        
+        if(players.length < 16) {
+            alert("Erreur : Impossible de trouver tous les joueurs.");
+            return;
+        }
+
         db[activeLeague].players = players;
         db[activeLeague].schedule = generateBergerSchedule(players.map(p => p.id));
         db[activeLeague].started = true;
@@ -163,14 +171,15 @@
 
     function generateBergerSchedule(ids) {
         let sched = [];
-        const n = ids.length;
+        let tempIds = [...ids];
+        const n = tempIds.length;
         for(let r=0; r<n-1; r++) {
             let wave = [];
             for(let i=0; i<n/2; i++) {
-                wave.push({ p1: ids[i], p2: ids[n-1-i], result: null }); // result: p1, p2, or 'DRAW'
+                wave.push({ p1: tempIds[i], p2: tempIds[n-1-i], result: null });
             }
             sched.push(wave);
-            ids.splice(1, 0, ids.pop());
+            tempIds.splice(1, 0, tempIds.pop());
         }
         return sched;
     }
@@ -186,9 +195,8 @@
     function renderTournament() {
         let leg = db[activeLeague];
         document.getElementById('league-label').innerText = activeLeague.replace('_', ' ');
-        document.getElementById('wave-label').innerText = `Vague ${leg.currentWave + 1} / 15`;
+        document.getElementById('wave-label').innerText = "Vague " + (leg.currentWave + 1) + " / 15";
         
-        // Matchs
         const mList = document.getElementById('matches-list');
         mList.innerHTML = "";
         let waveCompleted = true;
@@ -206,7 +214,6 @@
                 </div>`;
         });
 
-        // Navigation vagues
         document.getElementById('prev-btn').disabled = (leg.currentWave === 0);
         document.getElementById('next-btn').disabled = !waveCompleted || (leg.currentWave === 14);
 
@@ -247,7 +254,6 @@
         renderTournament();
     }
 
-    // --- TOOLS ---
     function nav(id) {
         document.querySelectorAll('body > div').forEach(d => d.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
@@ -257,7 +263,7 @@
         const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `saison_bots_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = "sauvegarde_leagues.json";
         a.click();
     }
 
@@ -266,14 +272,14 @@
         reader.onload = (event) => {
             db = JSON.parse(event.target.result);
             save(); load();
-            alert("Saison chargée !");
+            alert("Données importées !");
         };
         reader.readAsText(e.target.files[0]);
     }
 
     function fullReset() {
-        if(confirm("Tout effacer ?")) {
-            localStorage.removeItem('bot_multi_league_db');
+        if(confirm("Attention : supprimer TOUTES les ligues ?")) {
+            localStorage.removeItem('bot_multi_league_v2');
             location.reload();
         }
     }
